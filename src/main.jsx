@@ -9,12 +9,12 @@ const HERO='https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=fo
 const CAMP='https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1400&q=90';
 const VILLA='https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=1400&q=90';
 const APARTMENT='https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1400&q=90';
-const HOME_HERO='/images/hero-residences.png';
-const CARD_LABOUR='/images/card-labour-staff.png';
-const CARD_BUILDINGS='/images/card-full-buildings.png';
-const CARD_VILLAS='/images/card-villas.png';
-const CARD_APARTMENTS='/images/card-apartments.png';
-const UAE_MAP='/images/uae-map.png';
+const HOME_HERO='/images/hero-residences.webp';
+const CARD_LABOUR='/images/card-labour-staff.webp';
+const CARD_BUILDINGS='/images/card-full-buildings.webp';
+const CARD_VILLAS='/images/card-villas.webp';
+const CARD_APARTMENTS='/images/card-apartments.webp';
+const UAE_MAP='/images/uae-map.webp';
 
 function Logo(){return <Link className="brand" to="/" aria-label="Rokn Al Ahlam home"><img className="brand-logo" src="/ra-logo-approved.png" alt="Rokn Al Ahlam Real Estate"/></Link>}
 function Header(){const[open,setOpen]=useState(false);const p=useLocation().pathname;return <header className={p==='/'?'home-header':''}><Logo/><button className="mobile-toggle" onClick={()=>setOpen(!open)} aria-label="Toggle navigation">{open?<X/>:<Menu/>}</button><nav className={open?'open':''}>{nav.map(([label,url])=><Link key={url} className={p===url?'active':''} to={url} onClick={()=>setOpen(false)}>{label}</Link>)}<span className="search-wrap"><Search size={19}/><i/></span><span className="lang">EN <ChevronDown size={14}/></span><Link className="nav-cta" to="/contact#list">List Your Property <ArrowRight size={16}/></Link></nav></header>}
