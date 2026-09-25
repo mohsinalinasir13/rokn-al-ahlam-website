@@ -26,6 +26,17 @@ export function signWebhook(secret, timestamp, rawBody) {
   return crypto.createHmac('sha256', secret).update(`${timestamp}.`).update(rawBody).digest('hex');
 }
 
+// Client IP for rate limiting. Behind a trusted reverse proxy (Caddy) the proxy overwrites
+// X-Forwarded-For with the real peer, so the LAST entry is the one the proxy vouches for;
+// earlier entries are client-controlled and must never be trusted.
+export function clientIp(headers, remoteAddress, trustProxy) {
+  if (trustProxy && headers && headers['x-forwarded-for']) {
+    const parts = String(headers['x-forwarded-for']).split(',').map(s => s.trim()).filter(Boolean);
+    if (parts.length) return parts[parts.length - 1];
+  }
+  return remoteAddress || 'unknown';
+}
+
 export function referenceFromProspectId(id) {
   return 'RA-' + String(id).replace(/-/g, '').slice(0, 8).toUpperCase();
 }

@@ -1,0 +1,51 @@
+# Rokn enquiry relay - runs beside Company OS on the same VM.
+#
+# It joins Company OS's private compose network so it can call the intake at
+# http://app:8000 (never over the public Internet). Nothing is published on the
+# host: only Caddy (already public on 80/443) reaches the relay, over that network.
+#
+# Run from /opt/rokn-relay:
+#   docker compose -f deploy/relay/docker-compose.relay.yml up -d --build
+name: rokn-relay
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  rokn-relay:
+    build:
+      context: ../..
+      dockerfile: deploy/relay/Dockerfile
+    image: rokn-relay:${RELAY_TAG:-current}
+    container_name: rokn-relay
+    restart: unless-stopped
+    logging: *default-logging
+    # Holds COMPANY_OS_WEBHOOK_SECRET. Lives ONLY on the VM (chmod 600), outside the
+    # deployed file tree so a redeploy can never overwrite or leak it.
+    env_file:
+      - ../../relay.env
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "8787"
+    expose:
+      - "8787"
+    read_only: true
+    tmpfs:
+      - /tmp:size=8m,mode=1777
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 128m
+    cpus: 0.25
+    pids_limit: 64
+    networks: [companynet]
+
+networks:
+  companynet:
+    external: true
+    # Compose project "company-os" (directory /opt/company-os) names this network
+    # company-os_companynet. Confirm on the VM with:  docker network ls | grep companynet
+    name: ${COMPANY_NET:-company-os_companynet}

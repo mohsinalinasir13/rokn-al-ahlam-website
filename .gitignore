@@ -3,3 +3,7 @@ dist/
 .env
 .env.*
 !.env.example
+
+# Enquiry relay secrets (never commit)
+relay.env
+!.env.production

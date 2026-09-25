@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createRelay, signWebhook, referenceFromProspectId, MAX_BODY_BYTES } from './enquiry-relay.mjs';
+import { createRelay, signWebhook, referenceFromProspectId, clientIp, MAX_BODY_BYTES } from './enquiry-relay.mjs';
 
 const SECRET = 'unit-test-secret';
 const ENV = { COMPANY_OS_INTAKE_URL: 'https://os.example.test/api/v1/leads/website', COMPANY_OS_WEBHOOK_SECRET: SECRET, ALLOWED_ORIGINS: 'https://roknalahlam.com', RATE_LIMIT_PER_MIN: '10' };
@@ -149,4 +149,12 @@ test('logs never contain enquiry contents (no PII)', async () => {
   const all = lines.join('\n');
   assert.ok(lines.length >= 3);
   for (const pii of ['Test Person', 'test.person@example.com', '+971500000000', 'Jumeirah', SECRET]) assert.equal(all.includes(pii), false, pii);
+});
+
+test('client IP: proxy-vouched last X-Forwarded-For entry is used, spoofed earlier entries are ignored', () => {
+  assert.equal(clientIp({ 'x-forwarded-for': '6.6.6.6, 203.0.113.9' }, '172.18.0.5', true), '203.0.113.9');
+  assert.equal(clientIp({ 'x-forwarded-for': '203.0.113.9' }, '172.18.0.5', true), '203.0.113.9');
+  assert.equal(clientIp({ 'x-forwarded-for': '6.6.6.6' }, '172.18.0.5', false), '172.18.0.5');
+  assert.equal(clientIp({}, '172.18.0.5', true), '172.18.0.5');
+  assert.equal(clientIp({}, undefined, false), 'unknown');
 });

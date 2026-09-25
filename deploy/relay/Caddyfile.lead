@@ -1,0 +1,38 @@
+# Site block for the Rokn enquiry relay. Add it to the Company OS Caddyfile
+# (infra/caddy/Caddyfile on the VM) as a second site, then validate and reload.
+#
+# - Only POST/OPTIONS /api/enquiry is proxied; every other path is a 404, so the
+#   relay's health endpoint and anything else stay private.
+# - X-Forwarded-For is OVERWRITTEN with the real peer address so clients cannot
+#   spoof it to evade rate limiting.
+# - No access log is configured (Caddy logs none by default), so no IP addresses
+#   or request details are written to disk by the proxy.
+lead.roknalahlam.com {
+    encode gzip zstd
+
+    @enquiry path /api/enquiry
+    handle @enquiry {
+        request_body {
+            max_size 32KB
+        }
+        reverse_proxy rokn-relay:8787 {
+            header_up X-Forwarded-For {remote_host}
+            header_up -X-Real-IP
+            transport http {
+                dial_timeout 3s
+                response_header_timeout 12s
+            }
+        }
+    }
+
+    handle {
+        respond "Not found" 404
+    }
+
+    header {
+        Strict-Transport-Security "max-age=31536000"
+        X-Content-Type-Options nosniff
+        Referrer-Policy no-referrer
+        -Server
+    }
+}

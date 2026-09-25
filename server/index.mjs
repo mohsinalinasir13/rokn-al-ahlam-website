@@ -1,6 +1,6 @@
 // Minimal HTTP wrapper around the enquiry relay. Run: node server/index.mjs
 import http from 'node:http';
-import { createRelay, MAX_BODY_BYTES } from './enquiry-relay.mjs';
+import { createRelay, clientIp, MAX_BODY_BYTES } from './enquiry-relay.mjs';
 
 const relay = createRelay();
 const port = Number(process.env.PORT) || 8787;
@@ -18,7 +18,7 @@ const server = http.createServer((req, res) => {
   req.on('end', async () => {
     if (aborted) return;
     try {
-      const ip = process.env.TRUST_PROXY === '1' && req.headers['x-forwarded-for'] ? String(req.headers['x-forwarded-for']).split(',')[0].trim() : (req.socket.remoteAddress || 'unknown');
+      const ip = clientIp(req.headers, req.socket.remoteAddress, relay.cfg.trustProxy);
       const out = await relay.handle({ method: req.method, path: (req.url || '').split('?')[0], headers: req.headers, body: Buffer.concat(chunks).toString('utf8'), ip });
       res.writeHead(out.status, out.headers);
       res.end(out.body);
@@ -30,4 +30,16 @@ const server = http.createServer((req, res) => {
   });
 });
 
-server.listen(port, host, () => console.info(JSON.stringify({ evt: 'relay_listening', host, port, configured: !!(relay.cfg.url && relay.cfg.secret), origins: relay.cfg.origins.length })));
+// Slow-request protection and clean container stops.
+server.headersTimeout = 10000;
+server.requestTimeout = 15000;
+server.keepAliveTimeout = 5000;
+for (const sig of ['SIGTERM', 'SIGINT']) {
+  process.on(sig, () => {
+    console.info(JSON.stringify({ evt: 'relay_stopping', signal: sig }));
+    server.close(() => process.exit(0));
+    setTimeout(() => process.exit(0), 5000).unref();
+  });
+}
+
+server.listen(port, host, () => console.info(JSON.stringify({ evt: 'relay_listening', host, port, configured: !!(relay.cfg.url && relay.cfg.secret), origins: relay.cfg.origins.length, trustProxy: relay.cfg.trustProxy })));
