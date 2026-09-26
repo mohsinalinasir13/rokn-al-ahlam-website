@@ -1,0 +1,10 @@
+node_modules
+dist
+.git
+public
+docs
+*.md
+relay.env
+.env
+.env.*
+!.env.example
